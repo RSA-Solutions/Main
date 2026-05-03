@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSA Solutions</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --surface: #13161c;
+      --border: #1f2430;
+      --accent: #5be8a8;
+      --accent-dim: #2a6b51;
+      --text: #dce3ef;
+      --muted: #5e6a7d;
+      --card-hover: #191e28;
+    }
+ 
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    html { scroll-behavior: smooth; }
+ 
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+ 
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+ 
+    /* ── Grid lines background ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(94,106,125,0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(94,106,125,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+ 
+    /* ── Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+ 
+    /* ── Header ── */
+    header {
+      padding: 2.5rem 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+ 
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+ 
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--accent);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+    }
+ 
+    .logo-mark svg { display: block; }
+ 
+    .logo-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+ 
+    .logo-name span { color: var(--accent); }
+ 
+    /* ── Hero ── */
+    .hero {
+      padding: 7rem 0 5rem;
+    }
+ 
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+ 
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+ 
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+ 
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+ 
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+ 
+    /* ── Divider ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+ 
+    .section-divider span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+ 
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+ 
+    /* ── Services grid ── */
+    .services {
+      padding-bottom: 5rem;
+    }
+ 
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+ 
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.6rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+ 
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-dim), var(--accent));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+ 
+    .service-card:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-dim);
+      transform: translateY(-2px);
+    }
+ 
+    .service-card:hover::before { opacity: 1; }
+ 
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(91,232,168,0.08);
+      border: 1px solid rgba(91,232,168,0.15);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+ 
+    .card-icon svg { color: var(--accent); }
+ 
+    .card-body { flex: 1; }
+ 
+    .card-title {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.01em;
+    }
+ 
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+      font-family: 'DM Mono', monospace;
+      font-weight: 400;
+    }
+ 
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+ 
+    .card-url {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+ 
+    .card-arrow {
+      color: var(--accent);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+ 
+    .service-card:hover .card-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+ 
+    /* Placeholder card (coming soon) */
+    .service-card.placeholder {
+      opacity: 0.45;
+      pointer-events: none;
+      cursor: default;
+    }
+ 
+    .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: rgba(91,232,168,0.08);
+      color: var(--accent);
+      border: 1px solid rgba(91,232,168,0.2);
+      border-radius: 4px;
+      padding: 0.15em 0.5em;
+    }
+ 
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+ 
+    .footer-left {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+ 
+    .footer-left strong { color: var(--text); }
+ 
+    .footer-right {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+ 
+    /* ── Fade-in animation ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+ 
+    .hero-eyebrow { animation: fadeUp 0.5s ease both; animation-delay: 0.1s; opacity: 0; }
+    .hero h1      { animation: fadeUp 0.5s ease both; animation-delay: 0.2s; opacity: 0; }
+    .hero p       { animation: fadeUp 0.5s ease both; animation-delay: 0.3s; opacity: 0; }
+    .services-grid .service-card:nth-child(1) { animation: fadeUp 0.4s ease both; animation-delay: 0.4s; opacity: 0; }
+    .services-grid .service-card:nth-child(2) { animation: fadeUp 0.4s ease both; animation-delay: 0.5s; opacity: 0; }
+    .services-grid .service-card:nth-child(3) { animation: fadeUp 0.4s ease both; animation-delay: 0.6s; opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+ 
+    <header>
+      <a href="/" class="logo">
+        <div class="logo-mark">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="7" height="7" stroke="#5be8a8" stroke-width="1.5"/>
+            <rect x="10" y="1" width="7" height="7" stroke="#5be8a8" stroke-width="1.5" opacity="0.5"/>
+            <rect x="1" y="10" width="7" height="7" stroke="#5be8a8" stroke-width="1.5" opacity="0.5"/>
+            <rect x="10" y="10" width="7" height="7" stroke="#5be8a8" stroke-width="1.5" opacity="0.3"/>
+          </svg>
+        </div>
+        <span class="logo-name">RSA <span>Solutions</span></span>
+      </a>
+    </header>
+ 
+    <section class="hero">
+      <div class="hero-eyebrow">rsasolutions.org</div>
+      <h1>Services,<br/>self-hosted<br/><em>& running.</em></h1>
+      <p>A collection of tools and utilities built and maintained by RSA Solutions. More coming soon.</p>
+    </section>
+ 
+    <section class="services">
+      <div class="section-divider">
+        <span>Services</span>
+      </div>
+      <div class="services-grid">
+ 
+        <!-- Song Syncer -->
+        <a href="https://songsyncer.rsasolutions.org" class="service-card" target="_blank" rel="noopener">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="18" r="3"/><circle cx="18" cy="15" r="3"/>
+              <path d="M11 18V8l7-3v7"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-title">Song Syncer</div>
+            <div class="card-desc">Discord bot that watches threads for Spotify &amp; YouTube links and syncs them to playlists automatically.</div>
+          </div>
+          <div class="card-footer">
+            <span class="card-url">songsyncer.rsasolutions.org</span>
+            <svg class="card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </a>
+ 
+        <!-- Placeholder 1 -->
+        <div class="service-card placeholder">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-title">Coming Soon</div>
+            <div class="card-desc">Another service is on the way.</div>
+          </div>
+          <div class="card-footer">
+            <span class="badge">Soon</span>
+          </div>
+        </div>
+ 
+      </div>
+    </section>
+ 
+    <footer>
+      <div class="footer-left"><strong>RSA Solutions</strong> &mdash; rsasolutions.org</div>
+      <div class="footer-right">&copy; <script>document.write(new Date().getFullYear())</script> RSA Solutions</div>
+    </footer>
+ 
+  </div>
+</body>
+</html>
